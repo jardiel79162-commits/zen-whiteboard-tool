@@ -88,20 +88,25 @@ async function mirrorRepo(
   const blobs = tree.tree.filter((e: any) => e.type === "blob");
   log(`📂 ${blobs.length} arquivo(s) encontrado(s)`);
 
-  // 5. Clean dest - create empty tree and force commit
+  // 5. Clean dest - create a tree with just a placeholder file (GitHub rejects empty trees)
   log("🗑️ Limpando repositório de destino...");
   const destRef = await ghFetch(`/repos/${dOwner}/${dRepo}/git/ref/heads/${dBranch}`, destToken);
 
-  const emptyTree = await ghFetch(`/repos/${dOwner}/${dRepo}/git/trees`, destToken, {
+  const placeholderBlob = await ghFetch(`/repos/${dOwner}/${dRepo}/git/blobs`, destToken, {
     method: "POST",
-    body: JSON.stringify({ tree: [] }),
+    body: JSON.stringify({ content: "mirror in progress", encoding: "utf-8" }),
+  });
+
+  const cleanTree = await ghFetch(`/repos/${dOwner}/${dRepo}/git/trees`, destToken, {
+    method: "POST",
+    body: JSON.stringify({ tree: [{ path: ".mirror", mode: "100644", type: "blob", sha: placeholderBlob.sha }] }),
   });
 
   const emptyCommit = await ghFetch(`/repos/${dOwner}/${dRepo}/git/commits`, destToken, {
     method: "POST",
     body: JSON.stringify({
       message: "🗑️ Limpar repositório para mirror",
-      tree: emptyTree.sha,
+      tree: cleanTree.sha,
       parents: [destRef.object.sha],
     }),
   });
