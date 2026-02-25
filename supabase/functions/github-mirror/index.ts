@@ -24,6 +24,12 @@ async function ghFetch(path: string, token: string, options: RequestInit = {}) {
   });
   if (!res.ok) {
     const body = await res.text();
+    if (res.status === 404) {
+      throw new Error(`Recurso não encontrado (404): ${path}. Verifique se o repositório existe e o token tem acesso.`);
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(`Acesso negado (${res.status}): Verifique se o token é válido e tem permissão "repo".`);
+    }
     throw new Error(`GitHub API ${res.status}: ${body}`);
   }
   if (res.status === 204) return null;
@@ -42,14 +48,24 @@ async function mirrorRepo(
   // 1. Validate source
   log("🔍 Validando repositório de origem...");
   const { owner: sOwner, repo: sRepo } = parseRepoUrl(sourceUrl);
-  const sourceData = await ghFetch(`/repos/${sOwner}/${sRepo}`, sourceToken);
+  let sourceData: any;
+  try {
+    sourceData = await ghFetch(`/repos/${sOwner}/${sRepo}`, sourceToken);
+  } catch (e: any) {
+    throw new Error(`Erro ao acessar origem (${sOwner}/${sRepo}): ${e.message}`);
+  }
   const sBranch = sourceData.default_branch;
   log(`✅ Origem: ${sourceData.full_name} (branch: ${sBranch}, ${sourceData.private ? "privado" : "público"})`);
 
   // 2. Validate dest
   log("🔍 Validando repositório de destino...");
   const { owner: dOwner, repo: dRepo } = parseRepoUrl(destUrl);
-  const destData = await ghFetch(`/repos/${dOwner}/${dRepo}`, destToken);
+  let destData: any;
+  try {
+    destData = await ghFetch(`/repos/${dOwner}/${dRepo}`, destToken);
+  } catch (e: any) {
+    throw new Error(`Erro ao acessar destino (${dOwner}/${dRepo}): ${e.message}`);
+  }
   const dBranch = destData.default_branch;
   log(`✅ Destino: ${destData.full_name} (branch: ${dBranch}, ${destData.private ? "privado" : "público"})`);
 
