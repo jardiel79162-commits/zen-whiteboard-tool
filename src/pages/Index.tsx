@@ -1,11 +1,38 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { mirrorRepo, type LogEntry } from "@/lib/github";
 import { GitBranch, Copy, AlertTriangle, CheckCircle, Info, XCircle, Loader2, Eye, EyeOff } from "lucide-react";
+
+const STORAGE_KEY = "github-mirror-form";
+
+function usePersistedState(key: string, initial: string) {
+  const [value, setValue] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed[key] ?? initial;
+      }
+    } catch {}
+    return initial;
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const current = saved ? JSON.parse(saved) : {};
+      current[key] = value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    } catch {}
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
 
 const LogIcon = ({ type }: { type: LogEntry["type"] }) => {
   switch (type) {
@@ -17,13 +44,14 @@ const LogIcon = ({ type }: { type: LogEntry["type"] }) => {
 };
 
 const Index = () => {
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [destUrl, setDestUrl] = useState("");
-  const [sourceToken, setSourceToken] = useState("");
-  const [destToken, setDestToken] = useState("");
+  const [sourceUrl, setSourceUrl] = usePersistedState("sourceUrl", "");
+  const [destUrl, setDestUrl] = usePersistedState("destUrl", "");
+  const [sourceToken, setSourceToken] = usePersistedState("sourceToken", "");
+  const [destToken, setDestToken] = usePersistedState("destToken", "");
   const [showSourceToken, setShowSourceToken] = useState(false);
   const [showDestToken, setShowDestToken] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,8 +64,24 @@ const Index = () => {
   const handleClone = async () => {
     setLogs([]);
     setLoading(true);
+    setProgress(0);
     try {
-      await mirrorRepo(sourceUrl, destUrl, sourceToken, destToken, addLog);
+      await mirrorRepo(sourceUrl, destUrl, sourceToken, destToken, (msg, type) => {
+        addLog(msg, type);
+        // Estimate progress from log messages
+        if (msg.includes("Validando repositório de origem")) setProgress(5);
+        else if (msg.includes("Validando repositório de destino")) setProgress(10);
+        else if (msg.includes("Obtendo branches")) setProgress(15);
+        else if (msg.includes("Obtendo árvore")) setProgress(20);
+        else if (msg.includes("Limpando")) setProgress(30);
+        else if (msg.includes("arquivos copiados")) {
+          const match = msg.match(/(\d+)\/(\d+)/);
+          if (match) setProgress(30 + Math.round((parseInt(match[1]) / parseInt(match[2])) * 50));
+        }
+        else if (msg.includes("Criando árvore")) setProgress(85);
+        else if (msg.includes("branches adicionais")) setProgress(90);
+        else if (msg.includes("concluído")) setProgress(100);
+      });
     } catch (err: any) {
       addLog(err.message || "Erro desconhecido", "error");
     } finally {
@@ -184,6 +228,17 @@ const Index = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Progress bar */}
+            {loading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Progresso</span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-3" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
