@@ -110,8 +110,8 @@ const Index = () => {
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Configuração</CardTitle>
-            <CardDescription>
-              Informe os repositórios e tokens de acesso. Ambos devem ser públicos e os tokens precisam da permissão "repo".
+          <CardDescription>
+              Informe os repositórios e tokens de acesso. Os tokens precisam da permissão "repo" ativada.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">

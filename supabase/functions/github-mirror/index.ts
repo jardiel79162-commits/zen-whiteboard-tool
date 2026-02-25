@@ -43,17 +43,15 @@ async function mirrorRepo(
   log("🔍 Validando repositório de origem...");
   const { owner: sOwner, repo: sRepo } = parseRepoUrl(sourceUrl);
   const sourceData = await ghFetch(`/repos/${sOwner}/${sRepo}`, sourceToken);
-  if (sourceData.private) throw new Error("O repositório de origem deve ser público.");
   const sBranch = sourceData.default_branch;
-  log(`✅ Origem: ${sourceData.full_name} (branch: ${sBranch})`);
+  log(`✅ Origem: ${sourceData.full_name} (branch: ${sBranch}, ${sourceData.private ? "privado" : "público"})`);
 
   // 2. Validate dest
   log("🔍 Validando repositório de destino...");
   const { owner: dOwner, repo: dRepo } = parseRepoUrl(destUrl);
   const destData = await ghFetch(`/repos/${dOwner}/${dRepo}`, destToken);
-  if (destData.private) throw new Error("O repositório de destino deve ser público.");
   const dBranch = destData.default_branch;
-  log(`✅ Destino: ${destData.full_name} (branch: ${dBranch})`);
+  log(`✅ Destino: ${destData.full_name} (branch: ${dBranch}, ${destData.private ? "privado" : "público"})`);
 
   // 3. Get all branches from source
   log("📋 Obtendo branches da origem...");
