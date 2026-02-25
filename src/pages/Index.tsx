@@ -242,31 +242,40 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {/* Logs */}
+        {/* Terminal */}
         {logs.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                Log de Execução
-              </CardTitle>
+          <Card className="border-border/50 bg-[hsl(220,13%,10%)] text-[hsl(120,100%,90%)]">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-[hsl(0,70%,55%)]" />
+                  <span className="h-3 w-3 rounded-full bg-[hsl(45,80%,55%)]" />
+                  <span className="h-3 w-3 rounded-full bg-[hsl(120,50%,50%)]" />
+                </div>
+                <span className="text-xs font-mono text-[hsl(220,10%,55%)]">github-mirror — terminal</span>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="bg-muted rounded-lg p-4 max-h-80 overflow-y-auto space-y-2 font-mono text-sm">
+            <CardContent className="px-4 pb-4 pt-0">
+              <div className="max-h-80 overflow-y-auto space-y-1 font-mono text-xs leading-relaxed">
                 {logs.map((log, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <span className="text-muted-foreground text-xs mt-0.5 shrink-0 w-16">{log.time}</span>
-                    <LogIcon type={log.type} />
+                    <span className="text-[hsl(220,10%,45%)] shrink-0">{log.time}</span>
                     <span className={
-                      log.type === "error" ? "text-destructive" :
-                      log.type === "success" ? "text-green-600 dark:text-green-400" :
-                      log.type === "warn" ? "text-yellow-600 dark:text-yellow-400" :
-                      "text-foreground"
+                      log.type === "error" ? "text-[hsl(0,80%,65%)]" :
+                      log.type === "success" ? "text-[hsl(120,60%,65%)]" :
+                      log.type === "warn" ? "text-[hsl(45,80%,65%)]" :
+                      "text-[hsl(220,10%,75%)]"
                     }>
                       {log.msg}
                     </span>
                   </div>
                 ))}
                 <div ref={logsEndRef} />
+                {loading && (
+                  <div className="flex items-center gap-1 text-[hsl(120,60%,65%)]">
+                    <span className="animate-pulse">▌</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
